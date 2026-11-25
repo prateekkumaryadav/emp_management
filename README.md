@@ -1,3 +1,3 @@
 // starting flash server and view endpoints using postman
 
-python3 empt.py
+python3 emp.py
