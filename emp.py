@@ -1,30 +1,31 @@
 import logging
 from flask import Flask, jsonify, request
 
+# logger
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
 log = logging.getLogger("emp-api")
 
-
 app = Flask(__name__)
 
-emp = [{
+# employee list
+emp = {
  "emp-101": { "name": "Asha", "daysLeft": 5 },
  "emp-102": { "name": "Ravi", "daysLeft": 1 }
-}]
+}
 
+# all leave details
 leave = {}
 
-# pending = []
-
-
+# employee details
 @app.route('/emp', methods=['GET'])
 def emp_details():
     log.info("GET /emp - returning %d books", len(emp))
     return jsonify(emp)
 
+# leave details
 @app.route('/total_leaves', methods=['GET'])
 def leaves_details():
     log.info("GET /total_leaves - returning %d books", len(leave))
@@ -43,21 +44,23 @@ def apply_leave():
     # leave.append(cur_req)
     cur_req["status"] = "PENDING"
     cur_req["leaveId"] = f"lv-{len(leave)}"
-    log.info("Book added id=%s", f"lv-{len(leave)}")
+    log.info("Leave Request is added with id = %s", f"lv-{len(leave)}")
     leave[cur_req["leaveId"]] = cur_req
     # i+=1
     return jsonify(cur_req), 201
 
-@app.route('/leaves/<int:lv_id>/approve', methods=['POST'])
+@app.route('/leaves/<string:lv_id>/approve', methods=['POST'])
 def approval(lv_id):
     cur_req = leave[f"{lv_id}"]
-    data = request.get_json(silent=True)
-    data.pop("status", None)  # don't allow changing the id
-    data["statues"]="Approved"  # don't allow changing the id
-    
-    # book.update(data)
-    # log.info("Book updated id=%d", book_id)
-    return jsonify(data)
+    days = emp[cur_req["employeeId"]]["daysLeft"]-cur_req["days"]
+    if(days>=0):
+        emp[cur_req["employeeId"]]["daysLeft"]=days
+        leave[lv_id].pop("status")
+        leave[lv_id]["status"]="Approved"
+    else:
+        return jsonify({"error": "no more days left"}), 409
+
+    return jsonify({"leaveId":lv_id, "status": leave[lv_id]["status"], "daysLeft": days})
 
 
 
